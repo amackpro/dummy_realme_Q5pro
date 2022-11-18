@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2020,2021 The Linux Foundation. All rights reserved.
  */
 
 #include <linux/file.h>
@@ -249,6 +249,7 @@ static void kgsl_sync_timeline_value_str(struct dma_fence *fence,
 {
 	struct kgsl_sync_fence *kfence = (struct kgsl_sync_fence *)fence;
 	struct kgsl_sync_timeline *ktimeline = kfence->parent;
+	struct kgsl_context *context = NULL;
 
 	unsigned int timestamp_retired = 0;
 	unsigned int timestamp_queued = 0;
@@ -256,15 +257,22 @@ static void kgsl_sync_timeline_value_str(struct dma_fence *fence,
 	if (!kref_get_unless_zero(&ktimeline->kref))
 		return;
 
-	/*
-	 * ktimeline->device might be NULL here but kgsl_readtimestamp()
-	 * will handle that correctly
-	 */
-	kgsl_readtimestamp(ktimeline->device, ktimeline->context,
-		KGSL_TIMESTAMP_RETIRED, &timestamp_retired);
+	if (!ktimeline->device)
+		goto put_timeline;
 
-	kgsl_readtimestamp(ktimeline->device, ktimeline->context,
-		KGSL_TIMESTAMP_QUEUED, &timestamp_queued);
+	timestamp_queued = ktimeline->last_timestamp;
+	timestamp_retired = timestamp_queued;
+	if (!ktimeline->detached)
+		context = kgsl_context_get(ktimeline->device,
+					ktimeline->context_id);
+	if (context) {
+		kgsl_readtimestamp(ktimeline->device, context,
+			KGSL_TIMESTAMP_RETIRED, &timestamp_retired);
+
+		kgsl_readtimestamp(ktimeline->device, context,
+			KGSL_TIMESTAMP_QUEUED, &timestamp_queued);
+		kgsl_context_put(context);
+	}
 
 	snprintf(str, size, "%u queued:%u retired:%u",
 		ktimeline->last_timestamp,
@@ -298,15 +306,9 @@ int kgsl_sync_timeline_create(struct kgsl_context *context)
 {
 	struct kgsl_sync_timeline *ktimeline;
 
-	/* Put context when timeline is released */
-	if (!_kgsl_context_get(context))
-		return -ENOENT;
-
 	ktimeline = kzalloc(sizeof(*ktimeline), GFP_KERNEL);
-	if (ktimeline == NULL) {
-		kgsl_context_put(context);
+	if (ktimeline == NULL)
 		return -ENOMEM;
-	}
 
 	kref_init(&ktimeline->kref);
 	ktimeline->name = kasprintf(GFP_KERNEL, "%s_%d-%.15s(%d)-%.15s(%d)",
@@ -319,7 +321,8 @@ int kgsl_sync_timeline_create(struct kgsl_context *context)
 	INIT_LIST_HEAD(&ktimeline->child_list_head);
 	spin_lock_init(&ktimeline->lock);
 	ktimeline->device = context->device;
-	ktimeline->context = context;
+	ktimeline->context_id = context->id;
+	ktimeline->detached = false;
 
 	context->ktimeline = ktimeline;
 
@@ -353,10 +356,7 @@ static void kgsl_sync_timeline_signal(struct kgsl_sync_timeline *ktimeline,
 
 void kgsl_sync_timeline_destroy(struct kgsl_context *context)
 {
-	struct kgsl_sync_timeline *ktimeline = context->ktimeline;
-
-	kfree(ktimeline->name);
-	kfree(ktimeline);
+	ktimeline->detached = true;
 }
 
 static void kgsl_sync_timeline_release(struct kref *kref)

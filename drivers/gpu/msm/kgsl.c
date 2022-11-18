@@ -28,6 +28,9 @@
 #include "kgsl_reclaim.h"
 #include "kgsl_sync.h"
 #include "kgsl_trace.h"
+#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
+#include "kgsl_reserve.h"
+#endif
 
 #ifndef arch_mmap_check
 #define arch_mmap_check(addr, len, flags)	(0)
@@ -697,7 +700,7 @@ void kgsl_context_detach(struct kgsl_context *context)
 	/* Remove the event group from the list */
 	kgsl_del_event_group(&context->events);
 
-	kgsl_sync_timeline_put(context->ktimeline);
+	kgsl_sync_timeline_detach(context->ktimeline);
 
 	kgsl_context_put(context);
 }
@@ -2109,6 +2112,129 @@ done:
 
 	kgsl_context_put(context);
 	return result;
+}
+
+long kgsl_ioctl_gpu_aux_command(struct kgsl_device_private *dev_priv,
+		unsigned int cmd, void *data)
+{
+	struct kgsl_gpu_aux_command *param = data;
+	struct kgsl_device *device = dev_priv->device;
+	struct kgsl_context *context;
+	struct kgsl_drawobj **drawobjs;
+	struct kgsl_drawobj_sync *tsobj;
+	void __user *cmdlist;
+	u32 queued, count;
+	int i, index = 0;
+	long ret;
+	struct kgsl_gpu_aux_command_generic generic;
+
+	/* We support only one aux command */
+	if (param->numcmds != 1)
+		return -EINVAL;
+
+	if (!(param->flags & KGSL_GPU_AUX_COMMAND_TIMELINE))
+		return -EINVAL;
+
+	context = kgsl_context_get_owner(dev_priv, param->context_id);
+	if (!context)
+		return -EINVAL;
+
+	/*
+	 * param->numcmds is always one and we have one additional drawobj
+	 * for the timestamp sync if KGSL_GPU_AUX_COMMAND_SYNC flag is passed.
+	 * On top of that we make an implicit sync object for the last queued
+	 * timestamp on this context.
+	 */
+	count = (param->flags & KGSL_GPU_AUX_COMMAND_SYNC) ? 3 : 2;
+
+	drawobjs = kvcalloc(count, sizeof(*drawobjs), GFP_KERNEL);
+
+	if (!drawobjs) {
+		kgsl_context_put(context);
+		return -ENOMEM;
+	}
+
+	trace_kgsl_aux_command(context->id, param->numcmds, param->flags,
+		param->timestamp);
+
+	if (param->flags & KGSL_GPU_AUX_COMMAND_SYNC) {
+		struct kgsl_drawobj_sync *syncobj =
+			kgsl_drawobj_sync_create(device, context);
+
+		if (IS_ERR(syncobj)) {
+			ret = PTR_ERR(syncobj);
+			goto err;
+		}
+
+		drawobjs[index++] = DRAWOBJ(syncobj);
+
+		ret = kgsl_drawobj_sync_add_synclist(device, syncobj,
+				u64_to_user_ptr(param->synclist),
+				param->syncsize, param->numsyncs);
+		if (ret)
+			goto err;
+	}
+
+	kgsl_readtimestamp(device, context, KGSL_TIMESTAMP_QUEUED, &queued);
+
+	/*
+	 * Make an implicit sync object for the last queued timestamp on this
+	 * context
+	 */
+	tsobj = kgsl_drawobj_create_timestamp_syncobj(device,
+		context, queued);
+
+	if (IS_ERR(tsobj)) {
+		ret = PTR_ERR(tsobj);
+		goto err;
+	}
+
+	drawobjs[index++] = DRAWOBJ(tsobj);
+
+	cmdlist = u64_to_user_ptr(param->cmdlist);
+
+	/* Create a draw object for KGSL_GPU_AUX_COMMAND_TIMELINE */
+	if (copy_struct_from_user(&generic, sizeof(generic),
+		cmdlist, param->cmdsize)) {
+		ret = -EFAULT;
+		goto err;
+	}
+
+	if (generic.type == KGSL_GPU_AUX_COMMAND_TIMELINE) {
+		struct kgsl_drawobj_timeline *timelineobj;
+
+		timelineobj = kgsl_drawobj_timeline_create(device,
+			context);
+
+		if (IS_ERR(timelineobj)) {
+			ret = PTR_ERR(timelineobj);
+			goto err;
+		}
+
+		drawobjs[index++] = DRAWOBJ(timelineobj);
+
+		ret = kgsl_drawobj_add_timeline(dev_priv, timelineobj,
+			u64_to_user_ptr(generic.priv), generic.size);
+		if (ret)
+			goto err;
+	} else {
+		ret = -EINVAL;
+		goto err;
+	}
+
+	ret = device->ftbl->queue_cmds(dev_priv, context,
+		drawobjs, index, &param->timestamp);
+
+err:
+	kgsl_context_put(context);
+
+	if (ret && ret != -EPROTO) {
+		for (i = 0; i < count; i++)
+			kgsl_drawobj_destroy(drawobjs[i]);
+	}
+
+	kvfree(drawobjs);
+	return ret;
 }
 
 long kgsl_ioctl_cmdstream_readtimestamp_ctxtid(struct kgsl_device_private
@@ -4683,7 +4809,6 @@ static unsigned long _gpu_set_svm_region(struct kgsl_process_private *private,
 	 * trying to map a SVM region at the same time
 	 */
 	spin_lock(&entry->memdesc.gpuaddr_lock);
-
 	if (entry->memdesc.gpuaddr) {
 		spin_unlock(&entry->memdesc.gpuaddr_lock);
 		return (unsigned long) -EBUSY;
@@ -4720,7 +4845,6 @@ static unsigned long _gpu_find_svm(struct kgsl_process_private *private,
 {
 	uint64_t addr = kgsl_mmu_find_svm_region(private->pagetable,
 		(uint64_t) start, (uint64_t)end, (uint64_t) len, align);
-
 	WARN(!IS_ERR_VALUE((unsigned long)addr) && (addr > ULONG_MAX),
 		"Couldn't find range\n");
 
@@ -4733,7 +4857,6 @@ static unsigned long _cpu_get_unmapped_area(unsigned long bottom,
 {
 	struct vm_unmapped_area_info info;
 	unsigned long addr, err;
-
 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
 	info.low_limit = bottom;
 	info.high_limit = top;
@@ -4743,8 +4866,9 @@ static unsigned long _cpu_get_unmapped_area(unsigned long bottom,
 
 	addr = vm_unmapped_area(&info);
 
-	if (IS_ERR_VALUE(addr))
+	if (IS_ERR_VALUE(addr)) {
 		return addr;
+	}
 
 	err = security_mmap_addr(addr);
 	return err ? err : addr;
@@ -4778,6 +4902,15 @@ static unsigned long _search_range(struct kgsl_process_private *private,
 		if ((long) result == -EBUSY)
 			return -EBUSY;
 
+		/*
+		 * _gpu_set_svm_region will return -EBUSY if we tried to set up
+		 * SVM on an object that already has a GPU address. If
+		 * that happens don't bother walking the rest of the
+		 * region
+		 */
+		if ((long) result == -EBUSY)
+			return -EBUSY;
+
 		trace_kgsl_mem_unmapped_area_collision(entry, cpu, len);
 
 		if (cpu <= start) {
@@ -4787,7 +4920,8 @@ static unsigned long _search_range(struct kgsl_process_private *private,
 
 		/* move downward to the next empty spot on the GPU */
 		gpu = _gpu_find_svm(private, start, cpu, len, align);
-		if (IS_ERR_VALUE(gpu)) {
+
+        if (IS_ERR_VALUE(gpu)) {
 			result = gpu;
 			break;
 		}
@@ -4880,6 +5014,11 @@ static unsigned long _get_svm_area(struct kgsl_process_private *private,
 	 * Search downwards from the hint first. If that fails we
 	 * must try to search above it.
 	 */
+#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
+	result = kgsl_get_unmmaped_area_from_anti_fragment(private, entry, len, align);
+	if (result > 0)
+		return result;
+#endif
 	result = _search_range(private, entry, start, addr, len, align);
 	if (IS_ERR_VALUE(result) && hint != 0)
 		result = _search_range(private, entry, addr, end, len, align);
@@ -4927,7 +5066,11 @@ kgsl_get_unmapped_area(struct file *file, unsigned long addr,
 					       pid_nr(private->pid),
 					       current->mm->mmap_base, addr,
 					       pgoff, len, (int) val);
+
 	}
+#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
+	update_oom_pid_and_time(len, val, flags);
+#endif
 
 put:
 	kgsl_mem_entry_put(entry);
@@ -5281,9 +5424,15 @@ int kgsl_device_platform_probe(struct kgsl_device *device)
 				PM_QOS_CPU_DMA_LATENCY,
 				PM_QOS_DEFAULT_VALUE);
 	}
-
+#ifdef OPLUS_FEATURE_SCHED_ASSIST
+	if (sysctl_sched_assist_enabled)
+		device->events_wq = alloc_workqueue("kgsl-events",
+			WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_SYSFS | WQ_HIGHPRI | WQ_UX, 0);
+#else
 	device->events_wq = alloc_workqueue("kgsl-events",
 		WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_SYSFS | WQ_HIGHPRI, 0);
+#endif
+
 
 	/* Initialize the snapshot engine */
 	kgsl_device_snapshot_init(device);
