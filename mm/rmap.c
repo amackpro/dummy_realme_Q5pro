@@ -65,7 +65,6 @@
 #include <linux/page_idle.h>
 #include <linux/memremap.h>
 #include <linux/userfaultfd_k.h>
-#include <linux/mm_inline.h>
 
 #include <asm/tlbflush.h>
 
@@ -323,7 +322,7 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
  * good chance of avoiding scanning the whole hierarchy when it searches where
  * page is mapped.
  */
-int anon_vma_clone_oplus(struct vm_area_struct *dst, struct vm_area_struct *src)
+int anon_vma_clone_oppo(struct vm_area_struct *dst, struct vm_area_struct *src)
 {
 	struct anon_vma_chain *avc, *pavc;
 	struct anon_vma *root = NULL;
@@ -398,7 +397,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
 	 * so rmap can find non-COWed pages in child processes.
 	 */
 	#ifdef OPLUS_BUG_STABILITY
-	error = anon_vma_clone_oplus(vma, pvma);
+	error = anon_vma_clone_oppo(vma, pvma);
 	if (error < 0)
 		return error;
 	else if (error > RECURSIVE_MAX_FORK_TIME) {
@@ -849,12 +848,6 @@ static bool page_referenced_one(struct page *page, struct vm_area_struct *vma,
 		}
 
 		if (pvmw.pte) {
-			if (lru_gen_enabled() && pte_young(*pvmw.pte) &&
-			    !(vma->vm_flags & (VM_SEQ_READ | VM_RAND_READ))) {
-				lru_gen_look_around(&pvmw);
-				referenced++;
-			}
-
 			if (ptep_clear_flush_young_notify(vma, address,
 						pvmw.pte)) {
 				/*

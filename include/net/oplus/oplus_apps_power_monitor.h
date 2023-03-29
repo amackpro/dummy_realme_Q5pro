@@ -15,4 +15,4 @@ int app_monitor_dl_report_msg_handle(struct nlmsghdr *nlh);
 void oplus_app_power_monitor_init(void);
 void oplus_app_power_monitor_fini(void);
 
-#endif /* _OPLUS_APPS_POWER_MONITOR_H */
+#endif /* _OPPO_APPS_POWER_MONITOR_H */

@@ -251,12 +251,11 @@ static void kgsl_sync_timeline_value_str(struct dma_fence *fence,
 	struct kgsl_sync_timeline *ktimeline = kfence->parent;
 	struct kgsl_context *context = NULL;
 
-	unsigned int timestamp_retired = 0;
-	unsigned int timestamp_queued = 0;
+	unsigned int timestamp_retired;
+	unsigned int timestamp_queued;
 
 	if (!kref_get_unless_zero(&ktimeline->kref))
 		return;
-
 	if (!ktimeline->device)
 		goto put_timeline;
 
@@ -278,6 +277,7 @@ static void kgsl_sync_timeline_value_str(struct dma_fence *fence,
 		ktimeline->last_timestamp,
 		timestamp_queued, timestamp_retired);
 
+put_timeline:
 	kgsl_sync_timeline_put(ktimeline);
 }
 
@@ -354,27 +354,24 @@ static void kgsl_sync_timeline_signal(struct kgsl_sync_timeline *ktimeline,
 	kgsl_sync_timeline_put(ktimeline);
 }
 
-void kgsl_sync_timeline_destroy(struct kgsl_context *context)
+void kgsl_sync_timeline_detach(struct kgsl_sync_timeline *ktimeline)
 {
 	ktimeline->detached = true;
 }
 
-static void kgsl_sync_timeline_release(struct kref *kref)
+static void kgsl_sync_timeline_destroy(struct kref *kref)
 {
 	struct kgsl_sync_timeline *ktimeline =
 		container_of(kref, struct kgsl_sync_timeline, kref);
 
-	/*
-	 * Only put the context refcount here. The context destroy function
-	 * will call kgsl_sync_timeline_destroy() to kfree it
-	 */
-	kgsl_context_put(ktimeline->context);
+	kfree(ktimeline->name);
+	kfree(ktimeline);
 }
 
 void kgsl_sync_timeline_put(struct kgsl_sync_timeline *ktimeline)
 {
 	if (ktimeline)
-		kref_put(&ktimeline->kref, kgsl_sync_timeline_release);
+		kref_put(&ktimeline->kref, kgsl_sync_timeline_destroy);
 }
 
 static const struct dma_fence_ops kgsl_sync_fence_ops = {

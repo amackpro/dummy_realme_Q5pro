@@ -666,9 +666,6 @@ static void msm_restart_prepare(const char *cmd)
 		} else if (!strncmp(cmd, "safe", 4)) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_SAFE);
-		} else if (!strncmp(cmd, "novib", 5)) {
-			qpnp_pon_set_restart_reason(
-				PON_RESTART_REASON_REBOOT_NO_VIBRATION);
 		}
 		#endif
 		else {

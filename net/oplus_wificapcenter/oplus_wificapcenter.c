@@ -1,5 +1,5 @@
 /******************************************************************************
-** Copyright (C), 2019-2029, OPLUS Mobile Comm Corp., Ltd
+** Copyright (C), 2019-2029, OPPO Mobile Comm Corp., Ltd
 ** VENDOR_EDIT, All rights reserved.
 ** File: - opluswificap center.c
 ** Description: wificapcenter (wcc)

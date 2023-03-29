@@ -112,13 +112,6 @@
 #include <soc/oplus/system/hung_task_enhance.h>
 #endif
 
-#ifdef CONFIG_OPLUS_BINDER_STRATEGY
-#include <soc/oplus/healthinfo.h>
-extern int sysctl_ob_control_enable;
-extern int ob_pid;
-extern int sysctl_ob_control_handler(struct ctl_table *table, int write, void __user *buffer, size_t *lenp, loff_t *ppos);
-#endif
-
 /* External variables not in a header file. */
 extern int suid_dumpable;
 #ifdef CONFIG_COREDUMP
@@ -1698,22 +1691,6 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 		.extra2		= &one,
-	},
-#endif
-#ifdef CONFIG_OPLUS_BINDER_STRATEGY
-	{
-		.procname	= "oplus_binder_control_enabled",
-		.data		= &sysctl_ob_control_enable,
-		.maxlen 	= sizeof(int),
-		.mode		= 0660,
-		.proc_handler = sysctl_ob_control_handler,
-	},
-	{
-		.procname	= "oplus_bg_thread_pid",
-		.data		= &ob_pid,
-		.maxlen 	= sizeof(int),
-		.mode		= 0660,
-		.proc_handler = proc_dointvec,
 	},
 #endif
 #if defined(CONFIG_ARM) || defined(CONFIG_ARM64)

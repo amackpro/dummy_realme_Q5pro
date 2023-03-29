@@ -69,7 +69,7 @@
 #include <asm/mmu_context.h>
 
 #ifdef OPLUS_BUG_STABILITY
-#include <soc/oplus/system/oplus_process.h>
+#include <soc/oplus/system/oppo_process.h>
 #endif
 #if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
 //reserved area operations
@@ -420,7 +420,7 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct task_struct *parent)
 	    will_become_orphaned_pgrp(pgrp, ignored_task) &&
 	    has_stopped_jobs(pgrp)) {
 #ifdef OPLUS_BUG_STABILITY
-            if (oplus_is_android_core_group(pgrp)) {
+            if (oppo_is_android_core_group(pgrp)) {
                 printk("kill_orphaned_pgrp: find android core process will be hungup, ignored it, only hungup itself:%s:%d , current=%d \n",tsk->comm,tsk->pid,current->pid);
                 return;
             }
@@ -513,7 +513,6 @@ assign_new_owner:
 		goto retry;
 	}
 	mm->owner = c;
-	lru_gen_migrate_mm(mm);
 	task_unlock(c);
 	put_task_struct(c);
 }

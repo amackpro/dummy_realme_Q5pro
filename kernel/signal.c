@@ -61,12 +61,8 @@
 #endif /*OPLUS_FEATURE_HANS_FREEZE*/
 
 #ifdef OPLUS_BUG_STABILITY
-#include <soc/oplus/system/oplus_process.h>
+#include <soc/oplus/system/oppo_process.h>
 #endif
-
-#if defined(OPLUS_FEATURE_SCHED_ASSIST)
-#include <linux/sched_assist/sched_assist_common.h>
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
 
 /*
  * SLAB caches for signal bits.
@@ -1121,7 +1117,7 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
                         //#endif
                         printk("Some other process %d:%s want to send sig:%d to pid:%d tgid:%d comm:%s\n", current->pid, current->comm,sig, t->pid, t->tgid, t->comm);
                 }
-#ifdef CONFIG_OPLUS_SPECIAL_BUILD
+#ifdef CONFIG_OPPO_SPECIAL_BUILD
                 else if (sig == SIGSTOP){
                     printk("Process %d:%s want to send SIGSTOP to %d:%s\n", current->pid, current->comm, t->pid, t->comm);
                 }
@@ -1329,9 +1325,6 @@ int do_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
         }
 #endif
 
-#if defined(OPLUS_FEATURE_SCHED_ASSIST)
-	oplus_boost_kill_signal(sig, current, p);
-#endif
 	if (lock_task_sighand(p, &flags)) {
 		ret = send_signal(sig, info, p, type);
 		unlock_task_sighand(p, &flags);
@@ -1453,8 +1446,7 @@ int group_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
 		check_panic_on_foreground_kill(p);
 		ret = do_send_sig_info(sig, info, p, type);
 		if (capable(CAP_KILL) && sig == SIGKILL) {
-			if (!strcmp(current->comm, ULMK_MAGIC) ||
-			    !strcmp(current->comm, ATHENA_KILLER_MAGIC))
+			if (!strcmp(current->comm, ULMK_MAGIC))
 				add_to_oom_reaper(p);
 			ulmk_update_last_kill();
 		}

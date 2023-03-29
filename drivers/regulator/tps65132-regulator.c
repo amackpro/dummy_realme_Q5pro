@@ -3,7 +3,7 @@
  *
  * Copyright 2018 Texas Instruments
  *
- * Author: LiPing-m
+ * Author: LiPing-m <LiPing-m@oppo.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -26,9 +26,9 @@
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
 
-#include <soc/oplus/device_info.h>
-#include <soc/oplus/oplus_project.h>
-#include <soc/oplus/boot_mode.h>
+#include <soc/oppo/device_info.h>
+#include <soc/oppo/oppo_project.h>
+#include <soc/oppo/boot_mode.h>
 #include <linux/regmap.h>
 
 

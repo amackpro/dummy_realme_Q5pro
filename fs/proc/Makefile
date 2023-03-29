@@ -41,4 +41,3 @@ obj-y	+= healthinfo/
 #stat cpu usage on each tick.
 proc-y	+= task_cpustats.o
 #endif /* OPLUS_FEATURE_TASK_CPUSTATS */
-obj-$(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)	+= cpu_jankinfo/

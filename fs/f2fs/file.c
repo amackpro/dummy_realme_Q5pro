@@ -264,7 +264,8 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
 	    flush_begin = 0, flush_end = 0;
 #endif
 
-	if (unlikely(f2fs_readonly(inode->i_sb)))
+	if (unlikely(f2fs_readonly(inode->i_sb) ||
+				is_sbi_flag_set(sbi, SBI_CP_DISABLED)))
 		return 0;
 
 	trace_f2fs_sync_file_enter(inode);
@@ -294,7 +295,7 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
 	wr_file_end = local_clock();
 #endif
 
-	if (ret || is_sbi_flag_set(sbi, SBI_CP_DISABLED)) {
+	if (ret) {
 		trace_f2fs_sync_file_exit(inode, cp_reason, datasync, ret);
 		return ret;
 	}

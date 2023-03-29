@@ -40,10 +40,6 @@ bool ux_task_misfit(struct task_struct *p, int cpu);
 #define scale_demand(d) ((d)/walt_scale_demand_divisor)
 #endif /* OPLUS_FEATURE_SCHED_ASSIST */
 
-#ifdef CONFIG_OPLUS_FEATURE_GAME_OPT
-#include "../../drivers/soc/oplus/game_opt/game_ctrl.h"
-#endif
-
 #ifdef OPLUS_FEATURE_SCHED_ASSIST
 bool prefer_silver_check_freq(int cpu);
 bool prefer_silver_check_task_util(struct task_struct *p);
@@ -56,10 +52,6 @@ bool prefer_silver_check_cpu_util(int cpu);
 #include <soc/oplus/healthinfo.h>
 #endif
 #endif /* OPLUS_FEATURE_HEALTHINFO */
-
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-#include <linux/cpu_jankinfo/jank_tasktrack.h>
-#endif
 
 #if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
 #include <linux/iomonitor/iomonitor.h>
@@ -955,13 +947,8 @@ static void update_curr(struct cfs_rq *cfs_rq)
 
 	if (entity_is_task(curr)) {
 		struct task_struct *curtask = task_of(curr);
-#ifdef CONFIG_OPLUS_FEATURE_GAME_OPT
-		g_update_task_runtime(curtask, delta_exec);
-#endif
+
 		trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-		jankinfo_tasktrack_update_time(curtask, TRACE_RUNNING, delta_exec);
-#endif
 		cgroup_account_cputime(curtask, delta_exec);
 		account_group_exec_runtime(curtask, delta_exec);
 #ifdef OPLUS_FEATURE_HEALTHINFO
@@ -1020,9 +1007,6 @@ update_stats_wait_end(struct cfs_rq *cfs_rq, struct sched_entity *se)
 			return;
 		}
 		trace_sched_stat_wait(p, delta);
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-		jankinfo_tasktrack_update_time(p, TRACE_RUNNABLE, delta);
-#endif
 #ifdef OPLUS_FEATURE_HEALTHINFO
 // Add for get sched latency stat
 #ifdef CONFIG_OPLUS_HEALTHINFO
@@ -1076,9 +1060,6 @@ update_stats_enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
 		if (tsk) {
 			account_scheduler_latency(tsk, delta >> 10, 1);
 			trace_sched_stat_sleep(tsk, delta);
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-			jankinfo_tasktrack_update_time(tsk, TRACE_SLEEPING, delta);
-#endif
 #ifdef OPLUS_FEATURE_HEALTHINFO
 #ifdef CONFIG_OPLUS_JANK_INFO
 			update_jank_trace_info(tsk, JANK_TRACE_SSTATE, 0, delta);
@@ -1106,9 +1087,6 @@ update_stats_enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
 				__schedstat_add(se->statistics.iowait_sum, delta);
 				__schedstat_inc(se->statistics.iowait_count);
 				trace_sched_stat_iowait(tsk, delta);
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-				jankinfo_tasktrack_update_time(tsk, TRACE_DISKSLEEP_INIOWAIT, delta);
-#endif
 #ifdef OPLUS_FEATURE_HEALTHINFO
 // Add for get iowait
 #ifdef CONFIG_OPLUS_HEALTHINFO
@@ -1134,13 +1112,7 @@ update_stats_enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
 #ifdef CONFIG_OPLUS_FEATURE_AUDIO_OPT
 			sched_assist_update_record(tsk, delta, TST_SLEEP);
 #endif
-#ifdef CONFIG_OPLUS_FEATURE_GAME_OPT
-			g_sched_stat_blocked(tsk, delta);
-#endif
 			trace_sched_stat_blocked(tsk, delta);
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-			jankinfo_tasktrack_update_time(tsk, TRACE_DISKSLEEP, delta);
-#endif
 			trace_sched_blocked_reason(tsk);
 
 			/*
@@ -6409,11 +6381,7 @@ schedtune_cpu_margin_with(unsigned long util, int cpu, struct task_struct *p)
 
 static unsigned long cpu_util_without(int cpu, struct task_struct *p);
 
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-unsigned long capacity_spare_without(int cpu, struct task_struct *p)
-#else
 static unsigned long capacity_spare_without(int cpu, struct task_struct *p)
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 {
 	return max_t(long, capacity_of(cpu) - cpu_util_without(cpu, p), 0);
 }
@@ -7150,9 +7118,6 @@ enum fastpaths {
 #if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_SCHED_SPREAD)
 	NR_WAKEUP_SELECT,
 #endif
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	FRAME_BOOST_GROUP,
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 };
 
 static void find_best_target(struct sched_domain *sd, cpumask_t *cpus,
@@ -8041,10 +8006,6 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 	int task_boost = per_task_boost(p);
 	int boosted = (schedtune_task_boost(p) > 0) || (task_boost > 0);
 	int start_cpu;
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	int fbg_best_cpu;
-	struct cpumask *fbg_target = NULL;
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 
 	if (is_many_wakeup(sibling_count_hint) && prev_cpu != cpu &&
 			cpumask_test_cpu(prev_cpu, &p->cpus_allowed))
@@ -8069,21 +8030,6 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 
 	if (sync && (need_idle || (is_rtg && curr_is_rtg)))
 		sync = 0;
-
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	if (!is_full_throttle_boost() && !sched_assist_scene(SA_LAUNCH)) {
-		fbg_target = find_rtg_target(p);
-		if (fbg_target) {
-			fbg_best_cpu = find_fbg_cpu(p);
-			if (fbg_best_cpu >= 0) {
-				best_energy_cpu = fbg_best_cpu;
-				fbt_env.fastpath = FRAME_BOOST_GROUP;
-				goto frame_done;
-			}
-		}
-	}
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
-
 #ifdef OPLUS_FEATURE_SCHED_ASSIST
 	ux_skip_sync_wakeup(p, &sync);
 #endif
@@ -8245,9 +8191,6 @@ oplus_done:
 #endif /* CONFIG_OPLUS_FEATURE_TPP */
 
 done:
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-frame_done:
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 
 	trace_sched_task_util(p, cpumask_bits(candidates)[0], best_energy_cpu,
 			sync, fbt_env.need_idle, fbt_env.fastpath,
@@ -13448,21 +13391,12 @@ void check_for_migration(struct rq *rq, struct task_struct *p)
 	int prev_cpu = task_cpu(p);
 	int ret;
 
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	bool need_up_migrate = false;
-	struct cpumask *rtg_target = find_rtg_target(p);
-	if (rtg_target && (capacity_orig_of(prev_cpu) < capacity_orig_of(cpumask_first(rtg_target)))) {
-		need_up_migrate = true;
-	}
-	if (rq->misfit_task_load || need_up_migrate) {
-#else
 #ifdef OPLUS_FEATURE_SCHED_ASSIST
 	if (rq->misfit_task_load || (sched_assist_scene(SA_SLIDE) &&
 		is_heavy_ux_task(p) && ux_task_misfit(p, prev_cpu))) {
 #else
 	if (rq->misfit_task_load) {
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
+#endif
 		if (rq->curr->state != TASK_RUNNING ||
 		    rq->curr->nr_cpus_allowed == 1)
 			return;

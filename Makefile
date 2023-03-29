@@ -471,14 +471,16 @@ CFLAGS_KERNEL +=   -DOPLUS_FEATURE_POWER_EFFICIENCY
 CFLAGS_MODULE +=   -DOPLUS_FEATURE_POWER_EFFICIENCY
 # endif
 
+#ifdef COLOROS_EDIT
 -include OplusKernelEnvConfig.mk
+#endif // COLOROS_EDIT
 
 #ifdef VENDOR_EDIT
 ifneq (,$(findstring Aging,$(SPECIAL_VERSION)))
-OPLUS_F2FS_DEBUG := true
+OPPO_F2FS_DEBUG := true
 endif
 
-export OPLUS_F2FS_DEBUG
+export OPPO_F2FS_DEBUG
 #endif /* VENDOR_EDIT */
 
 #ifdef OPLUS_BUG_STABILITY
@@ -491,12 +493,12 @@ endif
 
 ifeq ($(AGING_DEBUG_MASK),2)
 #enable kasan
-OPLUS_KASAN_TEST := true
+OPPO_KASAN_TEST := true
 endif
 
 ifeq ($(AGING_DEBUG_MASK),3)
 #enable kmemleak
-OPLUS_KMEMLEAK_TEST := true
+OPPO_KMEMLEAK_TEST := true
 endif
 
 ifeq ($(AGING_DEBUG_MASK),4)
@@ -513,7 +515,7 @@ OPLUS_AGING_TEST := true
 OPLUS_PAGEOWNER_TEST := true
 endif
 
-export OPLUS_AGING_TEST OPLUS_KASAN_TEST OPLUS_KMEMLEAK_TEST OPLUS_SLUB_TEST OPLUS_PAGEOWNER_TEST
+export OPPO_AGING_TEST OPPO_KASAN_TEST OPPO_KMEMLEAK_TEST OPPO_SLUB_TEST OPLUS_PAGEOWNER_TEST
 #endif
 
 #ifdef OPLUS_FEATURE_MEMLEAK_DETECT
@@ -656,8 +658,12 @@ KBUILD_MODULES :=
 KBUILD_BUILTIN := 1
 
 # If we have only "make modules", don't compile built-in objects.
+# When we're building modules with modversions, we need to consider
+# the built-in objects during the descend as well, in order to
+# make sure the checksums are up to date before we record them.
+
 ifeq ($(MAKECMDGOALS),modules)
-  KBUILD_BUILTIN :=
+  KBUILD_BUILTIN := $(if $(CONFIG_MODVERSIONS),1)
 endif
 
 # If we have "make <whatever> modules", compile modules
@@ -1459,13 +1465,6 @@ ifdef CONFIG_MODULES
 # By default, build modules as well
 
 all: modules
-
-# When we're building modules with modversions, we need to consider
-# the built-in objects during the descend as well, in order to
-# make sure the checksums are up to date before we record them.
-ifdef CONFIG_MODVERSIONS
-  KBUILD_BUILTIN := 1
-endif
 
 # Build modules
 #

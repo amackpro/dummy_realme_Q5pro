@@ -84,7 +84,7 @@ int kgsl_add_fence_event(struct kgsl_device *device,
 
 int kgsl_sync_timeline_create(struct kgsl_context *context);
 
-void kgsl_sync_timeline_destroy(struct kgsl_context *context);
+void kgsl_sync_timeline_detach(struct kgsl_sync_timeline *ktimeline);
 
 void kgsl_sync_timeline_put(struct kgsl_sync_timeline *ktimeline);
 

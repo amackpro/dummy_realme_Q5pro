@@ -296,10 +296,6 @@ void bts_net_clear(void)
 }
 bool bts_net_exist(void)
 {
-        int platform_id = get_cached_platform_id();
-        if (platform_id == LAGOON) {
-                bts_net_clear();
-        }
 	return bts_net_wakeup_buffer[0] == 0 ? false : true;
 }
 ssize_t bts_net_fill(char * desc, ssize_t size)
@@ -690,7 +686,7 @@ static void app_wakeup_monitor(struct tcp_hook_simple_struct *pval, bool is_bloc
 			(0xFFFF);
 		pval->set[1+pval->count*3+2] = now_ts.tv_sec * 1000 + now_ts.tv_nsec / 1000000;
 		/*
-		printk("[oplus_nwpower] count:%d, block:%d, input:%d, pid:%d, uid:%d, stamp:%ld",
+		printk("[oppo_nwpower] count:%d, block:%d, input:%d, pid:%d, uid:%d, stamp:%ld",
 			pval->set[0], block, input, pid, uid, pval->set[1+pval->count*3+2]);
 		*/
 		pval->set[0] = (++pval->count);

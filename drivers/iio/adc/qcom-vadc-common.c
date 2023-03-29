@@ -1497,17 +1497,8 @@ int qcom_vadc_hw_scale(enum vadc_scale_fn_type scaletype,
 		return qcom_vadc_scale_hw_calib_therm(prescale, data,
 						adc_code, result);
 	case SCALE_HW_CALIB_BATT_THERM_100K:
-#ifdef OPLUS_FEATURE_CHG_BASIC
-		if (data->battemp_for_adc == 1) {
-			return qcom_vadc_scale_hw_calib_volt(prescale,
-					data,adc_code, result);
-		} else {
-#endif
-			return qcom_vadc_scale_hw_calib_batt_therm_100(prescale,
+		return qcom_vadc_scale_hw_calib_batt_therm_100(prescale,
 					data, lut_index, adc_code, result);
-#ifdef OPLUS_FEATURE_CHG_BASIC
-		}
-#endif
 	case SCALE_HW_CALIB_BATT_THERM_30K:
 		return qcom_vadc_scale_hw_calib_batt_therm_30(prescale,
 					data, lut_index, adc_code, result);

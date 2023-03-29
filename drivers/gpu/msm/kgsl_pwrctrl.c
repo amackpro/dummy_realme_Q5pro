@@ -3067,7 +3067,7 @@ int kgsl_pwrctrl_change_state(struct kgsl_device *device, int state)
 	}
 
 #ifdef CONFIG_OPLUS_FEATURE_MIDAS
-	oplus_pwrctrl_update_stats_info(device);
+	oppo_pwrctrl_update_stats_info(device);
 #endif
 
 	return status;
@@ -3463,13 +3463,13 @@ int kgsl_pwrctrl_set_default_gpu_pwrlevel(struct kgsl_device *device)
 
 #ifdef CONFIG_OPLUS_FEATURE_MIDAS
 /**
- * oplus_pwrctrl_update_stats_info() - update oplus gpu_info
+ * oppo_pwrctrl_update_stats_info() - update oppo gpu_info
  * @device: Pointer to the kgsl_device struct
  *
  * Update gpu state changes in gpu_info only, now only
  * consider KGSL_STATE_SLUMBER status.
  */
-void oplus_pwrctrl_update_stats_info(struct kgsl_device *device)
+void oppo_pwrctrl_update_stats_info(struct kgsl_device *device)
 {
 	struct kgsl_pwrctrl *pwr = &device->pwrctrl;
 	u64 total;

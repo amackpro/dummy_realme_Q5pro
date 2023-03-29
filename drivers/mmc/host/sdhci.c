@@ -75,14 +75,6 @@ static void sdhci_dump_state(struct sdhci_host *host)
 
 void sdhci_dumpregs(struct sdhci_host *host)
 {
-#ifdef CONFIG_EMMC_SDCARD_OPTIMIZE
-/* modify for disable sdcard log */
-	static int flag = 0;
-	if(!flag)
-		flag++;
-	else
-		return;
-#endif
 	mmc_log_string(host->mmc,
 		"BLOCK_SIZE=0x%08x BLOCK_COUNT=0x%08x COMMAND=0x%08x INT_STATUS=0x%08x INT_ENABLE=0x%08x SIGNAL_ENABLE=0x%08x\n",
 		sdhci_readw(host, SDHCI_BLOCK_SIZE),
@@ -92,6 +84,13 @@ void sdhci_dumpregs(struct sdhci_host *host)
 		sdhci_readl(host, SDHCI_INT_ENABLE),
 		sdhci_readl(host, SDHCI_SIGNAL_ENABLE));
 
+#ifdef CONFIG_EMMC_SDCARD_OPTIMIZE
+	static int flag = 0;
+	if(!flag)
+		    flag++;
+	else
+		    return;
+#endif
 	SDHCI_DUMP("============ SDHCI REGISTER DUMP ===========\n");
 
 	SDHCI_DUMP("Sys addr:  0x%08x | Version:  0x%08x\n",
@@ -3384,6 +3383,14 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
 		} else {
 			pr_msg = true;
 		}
+
+		if (host->mmc->ops->get_cd &&
+				!host->mmc->ops->get_cd(host->mmc)) {
+			pr_msg = false;
+			pr_err("%s: Got data error(%d) during card removal\n",
+				mmc_hostname(host->mmc), host->data->error);
+		}
+
 		if (pr_msg && __ratelimit(&host->dbg_dump_rs)) {
 			pr_err("%s: data txfr (0x%08x) error: %d after %lld ms\n",
 			       mmc_hostname(host->mmc), intmask,

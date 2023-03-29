@@ -16,7 +16,7 @@
 #include <soc/qcom/subsystem_notif.h>
 #ifdef OPLUS_BUG_STABILITY
 //Add for: disable wifi while power off charging because modem img will not mount
-#include <soc/oplus/boot_mode.h>
+#include <soc/oppo/boot_mode.h>
 #endif /* OPLUS_BUG_STABILITY */
 
 #ifdef CONFIG_OPLUS_KEVENT_UPLOAD
@@ -2737,13 +2737,6 @@ static ssize_t icnss_show_fw_ready(struct device_driver *driver, char *buf)
            firmware_ready = test_bit(CNSS_FW_READY, &plat_env->driver_state);
            regdbloadsuccess = test_bit(CNSS_LOAD_REGDB_SUCCESS, &plat_env->loadRegdbState);
            bdfloadsuccess = test_bit(CNSS_LOAD_BDF_SUCCESS, &plat_env->loadBdfState);
-           #ifdef OPLUS_FEATURE_WIFI_DCS_SWITCH
-           //avoid wifi firmware ready check fail when idle shutdown
-           cnss_pr_info("firmware_ready: %d; power_on: %d", firmware_ready, plat_env->powered_on);
-           if (!firmware_ready && !plat_env->powered_on && regdbloadsuccess && bdfloadsuccess) {
-               firmware_ready = true;
-           }
-           #endif /* OPLUS_FEATURE_WIFI_DCS_SWITCH */
 	}
 	cnssprobesuccess = (cnssprobestate == CNSS_PROBE_SUCCESS);
 	return sprintf(buf, "%s:%s:%s:%s",

@@ -24,13 +24,13 @@ config OPLUS_SLUB_TEST
 	string
 	default "$(OPLUS_SLUB_TEST)"
 
-config OPLUS_KASAN_TEST
+config OPPO_KASAN_TEST
 	string
-	default "$(OPLUS_KASAN_TEST)"
+	default "$(OPPO_KASAN_TEST)"
 
-config OPLUS_KMEMLEAK_TEST
+config OPPO_KMEMLEAK_TEST
 	string
-	default "$(OPLUS_KMEMLEAK_TEST)"
+	default "$(OPPO_KMEMLEAK_TEST)"
 
 config OPLUS_AGING_TEST
 	string
@@ -40,7 +40,7 @@ config OPLUS_PAGEOWNER_TEST
 	string
 	default "$(OPLUS_PAGEOWNER_TEST)"
 
-config OPLUS_AGING_DEBUG
+config OPPO_AGING_DEBUG
 	bool "oplus aging add config"
 	select IPC_LOGGING
 	select QCOM_RTB
@@ -52,24 +52,24 @@ config OPLUS_AGING_DEBUG
 	default y if OPLUS_AGING_TEST = "true"
 	default n
 
-config OPLUS_KASAN_DEBUG
+config OPPO_KASAN_DEBUG
 	bool "oplus kasan debug"
 	select KASAN
 	select KASAN_GENERIC
 	#select KCOV
 	#select KCOV_ENABLE_COMPARISONS
-	default y if OPLUS_KASAN_TEST = "true"
+	default y if OPPO_KASAN_TEST = "true"
 	default n
 
-config OPLUS_KMEMLEAK_DEBUG
+config OPPO_KMEMLEAK_DEBUG
 	bool "oplus kmemleak debug"
 	select DEBUG_KMEMLEAK
 	select SLUB_DEBUG
 	select SLABTRACE_DEBUG
-	default y if OPLUS_KMEMLEAK_TEST = "true"
+	default y if OPPO_KMEMLEAK_TEST = "true"
 	default n
 
-config OPLUS_SLUB_DEBUG
+config OPPO_SLUB_DEBUG
 	bool "oplus slub debug"
 	select SLUB_DEBUG
 	select SLUB_DEBUG_ON
@@ -77,7 +77,7 @@ config OPLUS_SLUB_DEBUG
 	default y if OPLUS_SLUB_TEST = "true"
 	default n
 
-config OPLUS_PAGEOWNER_DEBUG
+config OPPO_PAGEOWNER_DEBUG
 	bool "oplus pageowner debug"
 	select PAGE_OWNER
 	select PAGE_OWNER_ENABLE_DEFAULT

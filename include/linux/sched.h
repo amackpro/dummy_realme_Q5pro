@@ -43,10 +43,6 @@ extern void show_regs(struct pt_regs *);
 #include <linux/sched_assist/sched_assist_status.h>
 #endif
 
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-#include <linux/tuning/frame_boost_group.h>
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
-
 /* task_struct member predeclarations (sorted alphabetically): */
 struct audit_context;
 struct backing_dev_info;
@@ -672,12 +668,6 @@ struct ravg {
 	u16 pred_demand_scaled;
 	u64 active_time;
 	u64 last_win_size;
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	u64 curr_window_exec;
-	u64 prev_window_exec;
-	u64 curr_window_scale;
-	u64 prev_window_scale;
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 };
 #else
 static inline void sched_exit(struct task_struct *p) { }
@@ -849,17 +839,6 @@ enum perf_event_task_context {
 struct wake_q_node {
 	struct wake_q_node *next;
 };
-
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-#define OPLUS_NR_CPUS (8)
-/* hot-thread */
-struct task_record {
-#define RECOED_WINSIZE			(1 << 8)
-#define RECOED_WINIDX_MASK		(RECOED_WINSIZE - 1)
-	u8 winidx;
-	u8 count;
-};
-#endif
 
 #if defined(OPLUS_FEATURE_PROCESS_RECLAIM) && defined(CONFIG_PROCESS_RECLAIM_ENHANCE)
 union reclaim_limit {
@@ -1042,10 +1021,6 @@ struct task_struct {
 #ifdef CONFIG_MEMCG_KMEM
 	unsigned			memcg_kmem_skip_account:1;
 #endif
-#endif
-#ifdef CONFIG_LRU_GEN
-	/* whether the LRU algorithm may apply to this access */
-	unsigned			in_lru_fault:1;
 #endif
 #ifdef CONFIG_COMPAT_BRK
 	unsigned			brk_randomized:1;
@@ -1587,10 +1562,6 @@ struct task_struct {
 	struct task_info oplus_task_info;
 #endif
 
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-	struct task_record record[OPLUS_NR_CPUS];	/* 2*u64 */
-#endif
-
 #ifdef OPLUS_FEATURE_HEALTHINFO
 #ifdef CONFIG_OPLUS_JANK_INFO
 	int jank_trace;
@@ -1617,14 +1588,6 @@ struct task_struct {
 	int dtpd; /* dynamic tpd task */
 	int dtpdg; /* dynamic tpd task group */
 	int tpd_st; /* affinity decision from im */
-#endif
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	struct frame_boost_group *fbg;
-	struct list_head fbg_list;
-	int fbg_depth;
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_FDLEAK_CHECK)
-	unsigned int fdleak_flag;
 #endif
 	/* task is frozen/stopped (used by the cgroup freezer) */
 

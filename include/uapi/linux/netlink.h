@@ -38,7 +38,7 @@
 #endif /* OPLUS_FEATURE_WIFI_LUCKYMONEY */
 
 #ifdef OPLUS_FEATURE_HANS_FREEZE
-#define NETLINK_OPLUS_HANS       29      /* Socket for freezing solution*/
+#define NETLINK_OPPO_HANS       29      /* Socket for freezing solution*/
 #endif /*OPLUS_FEATURE_HANS_FREEZE*/
 
 //Add for apps network monitors
@@ -66,7 +66,7 @@
 //#endif /* OPLUS_FEATURE_IPV6_OPTIMIZE */
 
 //#ifdef OPLUS_FEATURE_THEIA
-//should match with oplus_theia/include/TheiaKeventThread.h define
+//should match with oppo_theia/include/TheiaKeventThread.h define
 #define OPLUS_NETLINK_THEIA_KEVENT 43
 
 //#define MAX_LINKS 40

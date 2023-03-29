@@ -5,7 +5,7 @@
 #include <linux/of_fdt.h>
 #include <linux/platform_device.h>
 
-#include <soc/oplus/system/oplus_project.h>
+#include <soc/oplus/system/oppo_project.h>
 
 #define TAG	"oplus_gpio:"
 

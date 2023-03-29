@@ -1116,10 +1116,6 @@ static inline void mark_readonly(void)
 }
 #endif
 
-#if IS_BUILTIN(CONFIG_OPLUS_FEATURE_PHOENIX_REBOOT_SPEED)
-extern void bootprof_log_boot(char *str);
-#endif
-
 static int __ref kernel_init(void *unused)
 {
 	int ret;
@@ -1147,9 +1143,6 @@ static int __ref kernel_init(void *unused)
 	if(phx_set_boot_stage)
 		phx_set_boot_stage(KERNEL_INIT_DONE);
 #endif //OPLUS_FEATURE_PHOENIX
-#if IS_BUILTIN(CONFIG_OPLUS_FEATURE_PHOENIX_REBOOT_SPEED)
-	bootprof_log_boot("Kernel_init_done");
-#endif
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);
 		if (!ret)

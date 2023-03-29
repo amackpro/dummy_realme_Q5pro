@@ -38,7 +38,7 @@ obj-$(CONFIG_IOMONITOR)    +=  oplus/iomonitor/
 obj-y						+= oplus/sensor/
 #endif
 #ifdef OPLUS_FEATURE_SENSOR_CRASH_MONITOR
-obj-$(CONFIG_OPLUS_FEATURE_SENSOR_CRASH_MONITOR)	+= oplus/oplus_slpirst/
+obj-$(CONFIG_OPLUS_FEATURE_SENSOR_CRASH_MONITOR)	+= oplus/oppo_slpirst/
 #endif
 
 
@@ -71,6 +71,4 @@ obj-$(CONFIG_OPLUS_FEATURE_TPD)     +=  oplus/tpd/
 #Add for NandSwap
 obj-$(CONFIG_NANDSWAP)		+= oplus/oplus_nandswap/
 
-#ifdef OPLUS_FEATURE_GAME_OPT
-obj-$(CONFIG_OPLUS_FEATURE_GAME_OPT) += oplus/game_opt/
-#endif /* OPLUS_FEATURE_GAME_OPT */
+

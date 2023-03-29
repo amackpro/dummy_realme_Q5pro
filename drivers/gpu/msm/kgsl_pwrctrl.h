@@ -330,6 +330,6 @@ void kgsl_pwrctrl_disable_unused_opp(struct kgsl_device *device,
 		struct device *dev);
 
 #ifdef CONFIG_OPLUS_FEATURE_MIDAS
-void oplus_pwrctrl_update_stats_info(struct kgsl_device *device);
+void oppo_pwrctrl_update_stats_info(struct kgsl_device *device);
 #endif
 #endif /* __KGSL_PWRCTRL_H */

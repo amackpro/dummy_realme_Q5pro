@@ -555,16 +555,14 @@ long  pn544_dev_ioctl(struct file *filp, unsigned int cmd,
             return get_ese_lock(P61_STATE_WIRED, arg);
         break;
         case P544_REL_SVDD_WAIT:
-            //ESE power-on failure sometimes
-            //pn544_dev->dwpLinkUpdateStat = arg;
+            pn544_dev->dwpLinkUpdateStat = arg;
             return release_svdd_wait();
         break;
         case P544_SET_NFC_SERVICE_PID:
             return set_nfc_pid(arg);
         break;
         case P544_REL_DWPONOFF_WAIT:
-            //ESE power-on failure sometimes
-            //pn544_dev->dwpLinkUpdateStat = arg;
+           pn544_dev->dwpLinkUpdateStat = arg;
             return release_dwpOnOff_wait();
         break;
         default:

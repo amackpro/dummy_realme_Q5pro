@@ -1637,10 +1637,6 @@ int mmc_attach_sd(struct mmc_host *host)
 		goto remove_card;
 	}
 
-#ifdef CONFIG_EMMC_SDCARD_OPTIMIZE
-/* Add for retry 5 times when new sdcard init error */
-    host->detect_change_retry = 5;
-#endif /* CONFIG_EMMC_SDCARD_OPTIMIZE */
 	return 0;
 
 remove_card:

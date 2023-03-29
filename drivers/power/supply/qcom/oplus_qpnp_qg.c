@@ -39,9 +39,9 @@
 #ifdef OPLUS_FEATURE_CHG_BASIC
 #include <linux/rtc.h>
 #include "../../oplus/oplus_gauge.h"
-#include <soc/oplus/device_info.h>
-#include <soc/oplus/oplus_project.h>
-//#include <soc/oplus/boot_mode.h>
+#include <soc/oppo/device_info.h>
+#include <soc/oppo/oppo_project.h>
+//#include <soc/oppo/boot_mode.h>
 #include "../../oplus/oplus_charger.h"
 #endif
 
@@ -5249,23 +5249,6 @@ static int qg_parse_dt(struct qpnp_qg *chip)
 	return 0;
 }
 
-#ifdef OPLUS_FEATURE_CHG_BASIC
-static int charge_qg_parse_dt(struct qpnp_qg *chip)
-{
-	struct device_node *node = chip->dev->of_node;
-
-	if (!node)  {
-		pr_err("Failed to find device-tree node\n");
-		return -ENXIO;
-	}
-
-	chip->qpnp_qg_feture = of_property_read_bool(node,"qcom,pm7250b-qg-feture");
-	pr_debug("qg_parse_dt qpnp_qg_feture = %d\n", (int)chip->qpnp_qg_feture);
-
-	return 0;
-}
-#endif
-
 static int process_suspend(struct qpnp_qg *chip)
 {
 	u8 status = 0;
@@ -5726,18 +5709,7 @@ static int qpnp_qg_probe(struct platform_device *pdev)
 		return rc;
 	}
 #ifdef OPLUS_FEATURE_CHG_BASIC
-	chip->dev = &pdev->dev;
-	rc = charge_qg_parse_dt(chip);
-	if (rc < 0) {
-		pr_err("Failed to parse qpnp_qg_feture of DT, rc=%d\n", rc);
-		return rc;
-	}
-
-	if(!chip->qpnp_qg_feture) {
-		chip->batt_therm_chan = iio_channel_get(&pdev->dev, "batt-therm_30k");
-	}else {
-		chip->batt_therm_chan = iio_channel_get(&pdev->dev, "batt-therm");
-	}
+	chip->batt_therm_chan = iio_channel_get(&pdev->dev, "batt-therm_30k");
 #else
 	chip->batt_therm_chan = iio_channel_get(&pdev->dev, "batt-therm");
 #endif
@@ -5750,16 +5722,13 @@ static int qpnp_qg_probe(struct platform_device *pdev)
 	}
 
 #ifdef OPLUS_FEATURE_CHG_BASIC
-	if(!chip->qpnp_qg_feture)
-	{
-    		chip->parallel_isense_chan = iio_channel_get(&pdev->dev, "parallel_isense");
-		if (IS_ERR(chip->parallel_isense_chan)) {
-			rc = PTR_ERR(chip->parallel_isense_chan);
-			if (rc != -EPROBE_DEFER)
-				pr_err("parallel_isense channel unavailable, rc=%d\n", rc);
-			chip->parallel_isense_chan = NULL;
-			return rc;
-		}
+    chip->parallel_isense_chan = iio_channel_get(&pdev->dev, "parallel_isense");
+	if (IS_ERR(chip->parallel_isense_chan)) {
+		rc = PTR_ERR(chip->parallel_isense_chan);
+		if (rc != -EPROBE_DEFER)
+			pr_err("parallel_isense channel unavailable, rc=%d\n", rc);
+		chip->parallel_isense_chan = NULL;
+		return rc;
 	}
 #endif
 

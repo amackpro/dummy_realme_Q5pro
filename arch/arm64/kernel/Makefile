@@ -74,6 +74,6 @@ ifeq ($(CONFIG_DEBUG_EFI),y)
 AFLAGS_head.o += -DVMLINUX_PATH="\"$(realpath $(objtree)/vmlinux)\""
 endif
 
-#ifdef CONFIG_OPLUS_SECURE_GUARD
+#ifdef CONFIG_OPPO_SECURE_GUARD
 obj-$(CONFIG_OPLUS_SECURE_GUARD)		+=  rootguard/
-#endif /* CONFIG_OPLUS_SECURE_GUARD */
+#endif /* CONFIG_OPPO_SECURE_GUARD */

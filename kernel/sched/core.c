@@ -36,17 +36,6 @@
 #include <linux/sched_assist/sched_assist_common.h>
 #endif /* OPLUS_FEATURE_SCHED_ASSIST */
 
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-#include <linux/tuning/frame_info.h>
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
-
-#ifdef CONFIG_OPLUS_FEATURE_GAME_OPT
-#include "../../drivers/soc/oplus/game_opt/game_ctrl.h"
-#endif
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-#include <linux/cpu_jankinfo/sa_jankinfo.h>
-#endif
-
 DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
 
 #ifdef CONFIG_SCHED_DEBUG
@@ -1345,9 +1334,6 @@ static inline void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
 	}
 
 	uclamp_rq_inc(rq, p);
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-	jankinfo_android_rvh_enqueue_task_handler(NULL, rq, p, flags);
-#endif
 	p->sched_class->enqueue_task(rq, p, flags);
 	walt_update_last_enqueue(p);
 	trace_sched_enq_deq_task(p, 1, cpumask_bits(&p->cpus_allowed)[0]);
@@ -2688,16 +2674,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags,
 {
 	unsigned long flags;
 	int cpu, success = 0;
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	bool in_grp = false;
-	struct frame_boost_group *grp = NULL;
-	rcu_read_lock();
-	grp = task_frame_boost_group(p);
-	rcu_read_unlock();
-	if (grp) {
-		in_grp = true;
-	}
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 
 	/*
 	 * If we are going to wake up a thread waiting for CONDITION we
@@ -2711,9 +2687,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags,
 		goto out;
 
 	trace_sched_waking(p);
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	trace_sched_in_fbg(p, in_grp);
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 #ifdef CONFIG_OPLUS_FEATURE_RT_INFO
     if (rt_handler != NULL)
         rt_handler(p);
@@ -2789,10 +2762,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags,
 		delayacct_blkio_end(p);
 		atomic_dec(&task_rq(p)->nr_iowait);
 	}
-
-#ifdef CONFIG_OPLUS_FEATURE_GAME_OPT
-        g_rt_try_to_wake_up(p);
-#endif
 
 	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags,
 			     sibling_count_hint);
@@ -3498,13 +3467,6 @@ static struct rq *finish_task_switch(struct task_struct *prev)
 		 * task and put them back on the free list.
 		 */
 		kprobe_flush_task(prev);
-#ifdef CONFIG_OPLUS_FEATURE_GAME_OPT
-		g_rt_task_dead(prev);
-#endif
-
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	        sched_set_frame_boost_group(prev, false);
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 
 		/* Task is done with its stack. */
 		put_task_stack(prev);
@@ -3612,10 +3574,8 @@ context_switch(struct rq *rq, struct task_struct *prev,
 		next->active_mm = oldmm;
 		mmgrab(oldmm);
 		enter_lazy_tlb(oldmm, next);
-	} else {
+	} else
 		switch_mm_irqs_off(oldmm, mm, next);
-		lru_gen_use_mm(mm);
-	}
 
 	if (!prev->mm) {
 		prev->active_mm = NULL;
@@ -3837,7 +3797,6 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 }
 
 unsigned int capacity_margin_freq = 1280; /* ~20% margin */
-#ifndef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
 #ifdef OPLUS_FEATURE_SCHED_ASSIST
 extern int sysctl_frame_rate;
 extern unsigned int sched_ravg_window;
@@ -3880,7 +3839,6 @@ static u64 calc_freq_ux_load(struct task_struct *p, u64 wallclock)
 	return max(freq_exec_load, freq_ravg_load);
 }
 #endif
-#endif
 /*
  * This function gets called by the timer code, with HZ frequency.
  * We call it with interrupts disabled.
@@ -3915,7 +3873,6 @@ void scheduler_tick(void)
 	if (early_notif)
 		flag = SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_EARLY_DET;
 
-#ifndef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
 #ifdef OPLUS_FEATURE_SCHED_ASSIST
 	if (sched_assist_scene(SA_SLIDE)) {
 		if(rq->curr && is_heavy_ux_task(rq->curr) && !ux_task_misfit(rq->curr, cpu)) {
@@ -3933,11 +3890,7 @@ void scheduler_tick(void)
 		ux_load_ts[cpu] = 0;
 	}
 #endif
-#endif
 	cpufreq_update_util(rq, flag);
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	sched_update_fbg_tick(rq->curr, wallclock);
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 	rq_unlock(rq, &rf);
 
 	perf_event_task_tick();
@@ -4398,9 +4351,6 @@ static void __sched notrace __schedule(bool preempt)
 	clear_preempt_need_resched();
 
 	wallclock = sched_ktime_clock();
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
-	jankinfo_android_rvh_schedule_handler(NULL, prev, next, rq);
-#endif
 	if (likely(prev != next)) {
 		if (!prev->on_rq)
 			prev->last_sleep_ts = wallclock;

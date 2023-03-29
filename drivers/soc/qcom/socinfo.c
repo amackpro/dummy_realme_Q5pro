@@ -22,7 +22,7 @@
 #include <linux/soc/qcom/smem.h>
 #include <soc/qcom/boot_stats.h>
 
-#include <soc/oplus/system/oplus_project.h>
+#include <soc/oplus/system/oppo_project.h>
 
 #define BUILD_ID_LENGTH 32
 #define CHIP_ID_LENGTH 32
@@ -336,6 +336,7 @@ static struct msm_soc_info cpu_of_id[] = {
 	/* kona ID */
 	[356] = {MSM_CPU_KONA, "KONA"},
 	[455] = {MSM_CPU_KONA, "KONA"},
+	[496] = {MSM_CPU_KONA, "KONA"},
 
 	/* Lito ID */
 #ifdef OPLUS_ARCH_EXTENDS
@@ -350,6 +351,9 @@ static struct msm_soc_info cpu_of_id[] = {
 	/* Bengal ID */
 	[417] = {MSM_CPU_BENGAL, "BENGAL"},
 	[444] = {MSM_CPU_BENGAL, "BENGAL"},
+
+	/* Khaje ID */
+	[518] = {MSM_CPU_KHAJE, "KHAJE"},
 
 	/* Lagoon ID */
 	[434] = {MSM_CPU_LAGOON, "LAGOON"},
@@ -463,7 +467,7 @@ char *socinfo_get_id_string(void)
 	if ((get_project() == 21615)||(get_project() == 21619)||(get_project() == 0x2161A)||(get_project() == 0x2169A)||(get_project() == 0x2169B)||(get_project() == 21623)||(get_project() == 21732)||(get_project() == 21733) || (get_project() == 22671) ) {
 		return cpu_of_id_21615.soc_id_string;
 	}
-	if ((get_project() == 19811) || (get_project() == 19821) || (get_project() == 19805) || (get_project() == 19855) || (get_project() == 20809)) {
+	if ((get_project() == 19811) || (get_project() == 19821) || (get_project() == 19805)) {
 		return cpu_of_id_op8.soc_id_string;
 	}
 	if (get_project() == 20828) {
@@ -513,7 +517,7 @@ static char *msm_read_hardware_id(void)
 		ret = strlcat(msm_soc_str, cpu_of_id_21615.soc_id_string,
 				sizeof(msm_soc_str));
 	}
-	else if ((get_project() == 19811) || (get_project() == 19821) || (get_project() == 19805) || (get_project() == 19855) || (get_project() == 20809)) {
+	else if ((get_project() == 19811) || (get_project() == 19821) || (get_project() == 19805)) {
 		ret = strlcat(msm_soc_str, cpu_of_id_op8.soc_id_string,
 				sizeof(msm_soc_str));
 	}
@@ -1353,6 +1357,10 @@ static void * __init setup_dummy_socinfo(void)
 		dummy_socinfo.id = 417;
 		strlcpy(dummy_socinfo.build_id, "bengal - ",
 		sizeof(dummy_socinfo.build_id));
+	} else if (early_machine_is_khaje()) {
+		dummy_socinfo.id = 518;
+		strlcpy(dummy_socinfo.build_id, "khaje - ",
+		sizeof(dummy_socinfo.build_id));
 	} else if (early_machine_is_bengalp()) {
 		dummy_socinfo.id = 445;
 		strlcpy(dummy_socinfo.build_id, "bengalp - ",
@@ -1805,8 +1813,7 @@ int __init socinfo_init(void)
 			|| (get_project() == 19335) || (get_project() == 20801)
 			|| (get_project() == 20804))
 			cpu_of_id[socinfo->v0_1.id].soc_id_string = real_cpu_id;
-		else if((get_project() == 20057) || (get_project() == 20058
-			|| get_project() == 20813) || get_project() == 20814)
+		else if((get_project() == 20057) || (get_project() == 20058))
 			cpu_of_id[socinfo->v0_1.id].soc_id_string = real_cpu_id_20057_20058;
 		else if((get_project() == 20669) || (get_project() == 20750) || (get_project() == 20751))
 			cpu_of_id[socinfo->v0_1.id].soc_id_string = real_cpu_id_20669_20750_20751;
@@ -1816,12 +1823,11 @@ int __init socinfo_init(void)
 		cpu_of_id[socinfo->v0_1.id].soc_id_string = fake_cpu_id;
 #endif
 	} else {
-		if((get_project() == 20057) || (get_project() == 20058
-			|| get_project() == 20813) || get_project() == 20814)
+		if((get_project() == 20057) || (get_project() == 20058))
 			cpu_of_id[socinfo->v0_1.id].soc_id_string = real_cpu_id_20057_20058;
 		else if((get_project() == 20669) || (get_project() == 20750) || (get_project() == 20751))
 			cpu_of_id[socinfo->v0_1.id].soc_id_string = real_cpu_id_20669_20750_20751;
-		else if((get_project() == 20061) || (get_project() == 20161) || (get_project() == 20163) || (get_project() == 20351) || (get_project() == 21027))
+		else if((get_project() == 20061) || (get_project() == 20161) || (get_project() == 20163) || (get_project() == 20351))
 			cpu_of_id[socinfo->v0_1.id].soc_id_string = real_cpu_id_20161_models;
 		else
 			cpu_of_id[socinfo->v0_1.id].soc_id_string = real_cpu_id;
